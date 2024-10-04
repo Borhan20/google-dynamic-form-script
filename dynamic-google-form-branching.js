@@ -1,6 +1,6 @@
 function populateForm() {
     // Open the Google Form by ID
-    var form = FormApp.openById('1cnb5II78n-mh2eZDxmdObzkxWwyyqwbueLHZpqAzFyM'); // Replace with your form ID
+    var form = FormApp.openById('1VU0ptOw1EEt9ErE235dG8SMk04LUOYGxF6vAQt1g8zw'); // Replace with your form ID
     
     // Open the Google Sheet by ID
     var sheet = SpreadsheetApp.openById('1aoxGl8I2rVfioJO80qqKxCuHCKcXy2CATs-5Btgc1zQ').getSheetByName('Sheet1'); // Replace with your Sheet ID and sheet name
@@ -38,9 +38,9 @@ function populateForm() {
     
     // Clear all existing items from the form
     var items = form.getItems();
-    // for (var i = items.length - 1; i >= 0; i--) {
-    //     form.deleteItem(items[i]);
-    // }
+    for (var i = items.length - 1; i >= 0; i--) {
+        form.deleteItem(items[i]);
+    }
     
     // Create the first section for name and phone number
     form.addSectionHeaderItem().setTitle('Contact Information');
@@ -52,6 +52,9 @@ function populateForm() {
     var regionsArray = Array.from(regionOptions);
     var regionPageBreaks = {};
     
+    // Store Zilla Page Breaks to link them to Upazila sections
+    var zillaPageBreaks = {};
+    
     // Iterate through regions and set up the corresponding Zilla sections
     regionsArray.forEach(function(region) {
         // Create a page break after selecting the region
@@ -60,14 +63,22 @@ function populateForm() {
         
         // Create the Zilla selection question
         var zillaQuestion = form.addMultipleChoiceItem().setTitle('Select Zilla for ' + region).setRequired(true);
-        zillaQuestion.setChoices(Array.from(zillaOptions[region]).map(zilla => zillaQuestion.createChoice(zilla)));
+        var zillasArray = Array.from(zillaOptions[region]);
         
-        // Create the Upazila sections linked from Zilla
-        Array.from(zillaOptions[region]).forEach(function(zilla) {
+        // Create a Zilla page break and store it for linking to Upazila sections
+        zillasArray.forEach(function(zilla) {
             var zillaBreak = form.addPageBreakItem().setTitle('Upazila Selection for ' + zilla);
+            zillaPageBreaks[zilla] = zillaBreak;
+            
+            // Create the Upazila selection question linked to the Zilla
             var upazilaQuestion = form.addMultipleChoiceItem().setTitle('Select Upazila for ' + zilla).setRequired(true);
             upazilaQuestion.setChoices(Array.from(upazilaOptions[zilla]).map(upazila => upazilaQuestion.createChoice(upazila)));
         });
+        
+        // Link Zilla question choices to the appropriate Upazila section
+        zillaQuestion.setChoices(zillasArray.map(function(zilla) {
+            return zillaQuestion.createChoice(zilla, zillaPageBreaks[zilla]);
+        }));
     });
     
     // Set up region question to navigate to the corresponding Zilla section
